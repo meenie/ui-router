@@ -82,7 +82,7 @@ describe('uiView', function () {
     controller: function() {
       this.someProperty = "value"
     },
-    controllerAs: "vm",
+    controllerAs: "vm"
   };
 
   beforeEach(module(function ($stateProvider) {
@@ -274,6 +274,39 @@ describe('uiView', function () {
 
       // verify if the initial view has been updated
       expect(elem.find('li').length).toBe(scope.items.length);
+    }));
+
+    // related to issue #857
+    it('should handle ui-view inside ng-if', inject(function ($state, $q, $compile, $animate) {
+      elem.append($compile('<div ng-if="someBoolean"><ui-view></ui-view></div>')(scope));
+
+      scope.someBoolean = false;
+
+      $state.transitionTo(aState);
+      $q.flush();
+      if ($animate) $animate.flush();
+
+      // Verify there is no ui-view in the DOM
+      expect(elem.find('ui-view').length).toBe(0);
+
+      // Turn on the div that holds the ui-view
+      scope.$apply(function() {
+        scope.someBoolean = true;
+      });
+
+      if ($animate) $animate.flush();
+
+      // Verify that the ui-view is there and it has the correct content
+      expect(elem.find('ui-view').text()).toBe(aState.template);
+
+      scope.$apply(function() {
+        scope.someBoolean = false;
+      });
+
+      if ($animate) $animate.flush();
+
+      // Verify there is no ui-view in the DOM
+      expect(elem.find('ui-view').length).toBe(0);
     }));
   });
 
