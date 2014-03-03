@@ -16,7 +16,7 @@
     <title>ui-router</title>
 </head>
 <body>
-<div ui-view class="container"></div>
+<div ui-view class="container">Top</div>
 
 <script>
     var app = angular.module('myApp', ['ui.router', 'ngAnimate']);
@@ -24,7 +24,8 @@
     app.config(function($stateProvider) {
         $stateProvider.state('home', {
             controller: function($scope, $state) {
-                $scope.show = false;
+                console.log('home');
+                $scope.show = true;
                 $scope.toggleShow = function() {
                     $scope.show = ! $scope.show;
                 };
@@ -34,13 +35,21 @@
                 };
             },
             data: {hi: 'someData'},
-            template: '<button ng-click="toggleShow()">Show?</button>\n<button ng-click="toggleState(\'home.test\')">Go Test</button>\n<button ng-click="toggleState(\'home.more\')">Go More</button>\n<div ui-view="named" ng-if="show" class="slide"></div>'
+            template: '<button ng-click="toggleShow()">Show?</button>\n<button ng-click="toggleState(\'home.test\')">Go Test</button>\n<button ng-click="toggleState(\'home.more\')">Go More</button>\n<div ui-view="named" ng-if="show" class="slide">middle</div>\n<div ui-view="named2" class="slide">middle</div>'
         });
         $stateProvider.state('home.test', {
             views: {
                 named: {
                     controller: function($scope) {
+                        console.log('home.test.named');
                         $scope.hi = 'Whatup?';
+                    },
+                    template: '<h1>{{hi}}</h1><div ui-view>bottom</div>'
+                },
+                named2: {
+                    controller: function($scope) {
+                        console.log('home.test.named2');
+                        $scope.hi = 'Whatup2?';
                     },
                     template: '<h1>{{hi}}</h1>'
                 }
@@ -50,6 +59,7 @@
             views: {
                 named: {
                     controller: function($scope, $state) {
+                        console.log('home.more');
                         $scope.data = $state.current.data;
                     },
                     template: '<h1>Mooare! {{data.hi}}</h1>'

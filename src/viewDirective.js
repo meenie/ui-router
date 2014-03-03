@@ -115,8 +115,8 @@
  * <ui-view autoscroll='scopeVariable'/>
  * </pre>
  */
-$ViewDirective.$inject = ['$state', '$compile', '$controller', '$injector', '$uiViewScroll', '$document'];
-function $ViewDirective(   $state,   $compile,   $controller,   $injector,   $uiViewScroll,   $document) {
+$ViewDirective.$inject = ['$state', '$injector', '$uiViewScroll'];
+function $ViewDirective(   $state,   $injector,   $uiViewScroll) {
 
   function getService() {
     return ($injector.has) ? function(service) {
@@ -142,7 +142,6 @@ function $ViewDirective(   $state,   $compile,   $controller,   $injector,   $ui
       return {
         enter: function (element, target, cb) {
           target.after(element);
-          target.remove();
           if (typeof cb === 'function') cb();
         },
         leave: function (element, cb) {
@@ -178,6 +177,7 @@ function $ViewDirective(   $state,   $compile,   $controller,   $injector,   $ui
     transclude: 'element',
     link: function (scope, $element, attrs, ctrl, $transclude) {
       var currentScope, currentEl, previousEl, viewLocals,
+          loaded        = false,
           onloadExp     = attrs.onload || '',
           autoscrollExp = attrs.autoscroll,
           renderer      = getRenderer(attrs, scope),
@@ -187,7 +187,7 @@ function $ViewDirective(   $state,   $compile,   $controller,   $injector,   $ui
 
       if (name.indexOf('@') < 0) name = name + '@' + (inherited ? inherited.state.name : '');
 
-      var eventHook = function () {
+      var eventHook = function (event) {
         if (viewIsUpdating) return;
 
         viewIsUpdating = true;
@@ -228,18 +228,9 @@ function $ViewDirective(   $state,   $compile,   $controller,   $injector,   $ui
         var newScope  = scope.$new(),
             locals    = $state.$current && $state.$current.locals[name];
 
-        /*if (! locals) {
-          cleanupLastView();
-          var testEl = $element.clone();
-          testEl.html($element.html());
-          renderer.enter(testEl, $element);
+        if (loaded && locals === viewLocals) return; // nothing to do
 
-          $compile(testEl.contents())(newScope);
-          return;
-        }*/
-
-        if (locals === viewLocals) return; // nothing to do
-
+        loaded = true;
         viewLocals = locals;
 
         var clone = $transclude(newScope, function(clone) {

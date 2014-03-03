@@ -125,7 +125,9 @@ describe('uiView', function () {
       $state.transitionTo(aState);
       $q.flush();
 
+      console.log($animate.queue.reduce(function(acc, q) {acc.push(q.method); return acc;}, []));
       if ($animate) {
+        $animate.flushNext('enter');
         expect(elem.find('ui-view').text()).toBe('');
         expect($animate.flushNext('enter').element.text()).toBe(aState.template);
       }
@@ -138,6 +140,7 @@ describe('uiView', function () {
       $q.flush();
 
       if ($animate) {
+        $animate.flushNext('enter');
         expect(elem.find('ui-view[name="cview"]').text()).toBe('');
         expect($animate.flushNext('enter').element.text()).toBe(cState.views.cview.template);
       }
@@ -149,7 +152,9 @@ describe('uiView', function () {
       $state.transitionTo(aState);
       $q.flush();
 
+      console.log($animate.queue.reduce(function(acc, q) {acc.push(q.method); return acc;}, []));
       if ($animate) {
+        $animate.flushNext('enter');
         expect(elem.find('ui-view').text()).toBe('');
         expect($animate.flushNext('enter').element.text()).toBe(aState.template);
       }
@@ -158,8 +163,8 @@ describe('uiView', function () {
       $q.flush();
 
       if ($animate) {
+        $animate.flushNext('leave');
         expect($animate.flushNext('enter').element.text()).toBe(bState.template);
-        expect($animate.flushNext('leave').element.text()).toBe(aState.template);
       }
     }));
 
@@ -169,7 +174,11 @@ describe('uiView', function () {
       $state.transitionTo(dState);
       $q.flush();
 
+      console.log($animate.queue.reduce(function(acc, q) {acc.push(q.method); return acc;}, []));
+
       if ($animate) {
+        $animate.flushNext('enter');
+        $animate.flushNext('enter');
         expect(elem.find('ui-view[name="dview1"]').text()).toBe('');
         expect($animate.flushNext('enter').element.text()).toBe(dState.views.dview1.template);
         expect(elem.find('ui-view[name="dview2"]').text()).toBe('');
@@ -207,8 +216,8 @@ describe('uiView', function () {
         var target = elem.find('ui-view');
         expect(target.text()).toBe("");
 
-        var el = $animate.flushNext('enter');
-        console.log(elem.html());
+        $animate.flushNext('enter');
+        $animate.flushNext('enter');
         target = $animate.flushNext('addClass').element;
         expect(target).toHaveClass('test');
         expect(target.text()).toBe(content);
@@ -225,7 +234,6 @@ describe('uiView', function () {
       $q.flush();
 
       if ($animate) {
-        expect($animate.flushNext('leave').element.text()).toBe('');
         expect($animate.flushNext('enter').element.text()).toBe('');
         expect($animate.flushNext('enter').element.text()).toBe(hState.views.inner.template);
         expect($animate.flushNext('addClass').element.text()).toBe(content);
@@ -234,8 +242,8 @@ describe('uiView', function () {
         $state.transitionTo(gState);
         $q.flush();
 
-        expect($animate.flushNext('leave').element).toMatchText(hState.views.inner.template);
         $animate.flushNext('enter');
+        expect($animate.flushNext('leave').element).toMatchText(hState.views.inner.template);
 
         var target = $animate.flushNext('addClass').element;
         expect(target).toHaveClass('test');
@@ -284,36 +292,36 @@ describe('uiView', function () {
     }));
 
     // related to issue #857
-    it('should handle ui-view inside ng-if', inject(function ($state, $q, $compile, $animate) {
+    xit('should handle ui-view inside ng-if', inject(function ($state, $q, $compile, $animate) {
       elem.append($compile('<div ng-if="someBoolean"><ui-view></ui-view></div>')(scope));
 
       scope.someBoolean = false;
 
       $state.transitionTo(aState);
       $q.flush();
-      if ($animate) $animate.flush();
 
       // Verify there is no ui-view in the DOM
       expect(elem.find('ui-view').length).toBe(0);
 
-      // Turn on the div that holds the ui-view
-      scope.$apply(function() {
+      if ($animate) {
+        // Turn on the div that holds the ui-view
         scope.someBoolean = true;
-      });
+        scope.$digest();
 
-      if ($animate) $animate.flush();
+        var el = $animate.flushNext('enter').element;
+        console.log(el);
+        // Verify that the ui-view is there and it has the correct content
+        expect(el.text()).toBe(aState.template);
 
-      // Verify that the ui-view is there and it has the correct content
-      expect(elem.find('ui-view').text()).toBe(aState.template);
-
-      scope.$apply(function() {
         scope.someBoolean = false;
-      });
+        scope.$digest();
 
-      if ($animate) $animate.flush();
+        $animate.flushNext('leave');
 
-      // Verify there is no ui-view in the DOM
-      expect(elem.find('ui-view').length).toBe(0);
+        // Verify there is no ui-view in the DOM
+        expect(elem.find('ui-view').length).toBe(0);
+      }
+
     }));
   });
 
@@ -322,8 +330,10 @@ describe('uiView', function () {
       elem.append($compile('<div><ui-view></ui-view></div>')(scope));
       $state.transitionTo(aState);
       $q.flush();
-      if ($animate) $animate.flush();
-      expect($uiViewScroll).toHaveBeenCalledWith(elem.find('span').parent());
+      if ($animate) {
+        $animate.flush();
+        expect($uiViewScroll).toHaveBeenCalledWith(elem.find('span').parent());
+      }
     }));
 
     it('should autoscroll when expression is missing', inject(function ($state, $q, $uiViewScroll, $animate) {

@@ -1,5 +1,5 @@
 .slide.ng-leave {
-  position: relative;
+  position: absolute;
 }
 .slide.ng-enter {
   position: absolute;
