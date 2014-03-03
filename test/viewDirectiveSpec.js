@@ -4,6 +4,17 @@
 describe('uiView', function () {
   'use strict';
 
+  afterEach(function () {
+    // check if any have failed
+    if(this.results_.failedCount > 0) {
+      // if so, change the function which should move to the next test
+      jasmine.Queue.prototype.next_ = function () {
+        // to instead skip to the end
+        this.onComplete();
+      }
+    }
+  });
+
   var scope, $compile, elem;
 
   beforeEach(function() {
@@ -115,7 +126,7 @@ describe('uiView', function () {
       $q.flush();
 
       if ($animate) {
-        expect($animate.flushNext('leave').element.text()).toBe('');
+        expect(elem.find('ui-view').text()).toBe('');
         expect($animate.flushNext('enter').element.text()).toBe(aState.template);
       }
     }));
@@ -127,7 +138,7 @@ describe('uiView', function () {
       $q.flush();
 
       if ($animate) {
-        expect($animate.flushNext('leave').element.text()).toBe('');
+        expect(elem.find('ui-view[name="cview"]').text()).toBe('');
         expect($animate.flushNext('enter').element.text()).toBe(cState.views.cview.template);
       }
     }));
@@ -139,7 +150,7 @@ describe('uiView', function () {
       $q.flush();
 
       if ($animate) {
-        expect($animate.flushNext('leave').element.text()).toBe('');
+        expect(elem.find('ui-view').text()).toBe('');
         expect($animate.flushNext('enter').element.text()).toBe(aState.template);
       }
 
@@ -147,8 +158,8 @@ describe('uiView', function () {
       $q.flush();
 
       if ($animate) {
-        expect($animate.flushNext('leave').element.text()).toBe(aState.template);
         expect($animate.flushNext('enter').element.text()).toBe(bState.template);
+        expect($animate.flushNext('leave').element.text()).toBe(aState.template);
       }
     }));
 
@@ -159,9 +170,9 @@ describe('uiView', function () {
       $q.flush();
 
       if ($animate) {
-        expect($animate.flushNext('leave').element.html()).toBe('');
+        expect(elem.find('ui-view[name="dview1"]').text()).toBe('');
         expect($animate.flushNext('enter').element.text()).toBe(dState.views.dview1.template);
-        expect($animate.flushNext('leave').element.html()).toBe('');
+        expect(elem.find('ui-view[name="dview2"]').text()).toBe('');
         expect($animate.flushNext('enter').element.text()).toBe(dState.views.dview2.template);
       }
     }));
@@ -173,7 +184,7 @@ describe('uiView', function () {
       $q.flush();
 
       if ($animate) {
-        expect($animate.flushNext('leave').element.text()).toBe('');
+        expect(elem.find('ui-view').text()).toBe('');
         expect($animate.flushNext('enter').element.parent().find('.view')).toMatchText('');
 
         var target = $animate.flushNext('enter').element;
@@ -186,22 +197,18 @@ describe('uiView', function () {
   describe('handling initial view', function () {
     it('initial view should be compiled if the view is empty', inject(function ($state, $q, $animate) {
       var content = 'inner content';
-      elem.append($compile('<div><ui-view></ui-view></div')(scope));
+      elem.append($compile('<div><ui-view></ui-view></div>')(scope));
       scope.$apply('content = "' + content + '"');
 
       $state.transitionTo(gState);
       $q.flush();
 
       if ($animate) {
-        var target = $animate.flushNext('leave').element;
+        var target = elem.find('ui-view');
         expect(target.text()).toBe("");
 
-        $animate.flushNext('enter');
-        $animate.flushNext('leave');
-        $animate.flushNext('enter');
-        $animate.flushNext('addClass');
-        $animate.flushNext('addClass');
-
+        var el = $animate.flushNext('enter');
+        console.log(elem.html());
         target = $animate.flushNext('addClass').element;
         expect(target).toHaveClass('test');
         expect(target.text()).toBe(content);

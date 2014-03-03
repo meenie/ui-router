@@ -1,0 +1,66 @@
+<!doctype html>
+<!-- Our uiRouterSample module defined here -->
+<html lang="en" ng-app="myApp">
+<head>
+    <meta charset="utf-8">
+
+    <!-- using twitter bootstrap, but of course -->
+    <link rel="stylesheet" type="text/css" href="bootstrap.min.css">
+    <!-- styles for ng-animate are located here -->
+    <link rel="stylesheet" type="text/css" href="styles.css">
+
+    <!-- Include both angular.js and angular-ui-router.js-->
+    <script src="../lib/angular-1.2.4/angular.js"></script>
+    <script src="../lib/angular-1.2.4/angular-animate.js"></script>
+    <script src="../build/angular-ui-router.js"></script>
+    <title>ui-router</title>
+</head>
+<body>
+<div ui-view class="container"></div>
+
+<script>
+    var app = angular.module('myApp', ['ui.router', 'ngAnimate']);
+
+    app.config(function($stateProvider) {
+        $stateProvider.state('home', {
+            controller: function($scope, $state) {
+                $scope.show = false;
+                $scope.toggleShow = function() {
+                    $scope.show = ! $scope.show;
+                };
+
+                $scope.toggleState = function(stateName) {
+                    $state.go(stateName);
+                };
+            },
+            data: {hi: 'someData'},
+            template: '<button ng-click="toggleShow()">Show?</button>\n<button ng-click="toggleState(\'home.test\')">Go Test</button>\n<button ng-click="toggleState(\'home.more\')">Go More</button>\n<div ui-view="named" ng-if="show" class="slide"></div>'
+        });
+        $stateProvider.state('home.test', {
+            views: {
+                named: {
+                    controller: function($scope) {
+                        $scope.hi = 'Whatup?';
+                    },
+                    template: '<h1>{{hi}}</h1>'
+                }
+            }
+        });
+        $stateProvider.state('home.more', {
+            views: {
+                named: {
+                    controller: function($scope, $state) {
+                        $scope.data = $state.current.data;
+                    },
+                    template: '<h1>Mooare! {{data.hi}}</h1>'
+                }
+            }
+        });
+    });
+
+    app.run(function($state) {
+        $state.go('home.test');
+    });
+</script>
+</body>
+</html>

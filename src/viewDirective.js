@@ -228,6 +228,16 @@ function $ViewDirective(   $state,   $compile,   $controller,   $injector,   $ui
         var newScope  = scope.$new(),
             locals    = $state.$current && $state.$current.locals[name];
 
+        /*if (! locals) {
+          cleanupLastView();
+          var testEl = $element.clone();
+          testEl.html($element.html());
+          renderer.enter(testEl, $element);
+
+          $compile(testEl.contents())(newScope);
+          return;
+        }*/
+
         if (locals === viewLocals) return; // nothing to do
 
         viewLocals = locals;
