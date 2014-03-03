@@ -140,21 +140,15 @@ function $ViewDirective(   $state,   $injector,   $uiViewScroll) {
   function getRenderer(attrs, scope) {
     var statics = function() {
       return {
-        enter: function (element, target, cb) {
-          target.after(element);
-          if (typeof cb === 'function') cb();
-        },
-        leave: function (element, cb) {
-          element.remove();
-          if (typeof cb === 'function') cb();
-        }
+        enter: function (element, target) { target.after(element); },
+        leave: function (element) { element.remove(); }
       };
     };
 
     if ($animate) {
       return {
-        enter: function(element, target, cb) { $animate.enter(element, null, target, cb || angular.noop); },
-        leave: function(element, cb) { $animate.leave(element, cb || angular.noop); }
+        enter: function(element, target) { $animate.enter(element, null, target); },
+        leave: function(element) { $animate.leave(element); }
       };
     }
 
@@ -162,8 +156,8 @@ function $ViewDirective(   $state,   $injector,   $uiViewScroll) {
       var animate = $animator && $animator(scope, attrs);
 
       return {
-        enter: function(element, target, cb) { animate.enter(element, target, cb || angular.noop); },
-        leave: function(element, cb) { animate.leave(element.contents(), element, cb || angular.noop); }
+        enter: function(element, target) { animate.enter(element, target); },
+        leave: function(element) { animate.leave(element.contents(), element); }
       };
     }
 
@@ -176,7 +170,7 @@ function $ViewDirective(   $state,   $injector,   $uiViewScroll) {
     priority: 400,
     transclude: 'element',
     link: function (scope, $element, attrs, ctrl, $transclude) {
-      var currentScope, currentEl, previousEl, viewLocals,
+      var currentScope, currentEl, viewLocals,
           loaded        = false,
           onloadExp     = attrs.onload || '',
           autoscrollExp = attrs.autoscroll,
@@ -187,7 +181,7 @@ function $ViewDirective(   $state,   $injector,   $uiViewScroll) {
 
       if (name.indexOf('@') < 0) name = name + '@' + (inherited ? inherited.state.name : '');
 
-      var eventHook = function (event) {
+      var eventHook = function () {
         if (viewIsUpdating) return;
 
         viewIsUpdating = true;
@@ -204,22 +198,13 @@ function $ViewDirective(   $state,   $injector,   $uiViewScroll) {
       updateView();
 
       function cleanupLastView() {
-        if (previousEl) {
-          previousEl.remove();
-          previousEl = null;
-        }
-
         if (currentScope) {
           currentScope.$destroy();
           currentScope = null;
         }
 
         if (currentEl) {
-          renderer.leave(currentEl, function() {
-            previousEl = null;
-          });
-
-          previousEl = currentEl;
+          renderer.leave(currentEl);
           currentEl = null;
         }
       }
@@ -235,11 +220,7 @@ function $ViewDirective(   $state,   $injector,   $uiViewScroll) {
 
         var clone = $transclude(newScope, function(clone) {
           clone.data('$uiViewName', name);
-          renderer.enter(clone, currentEl || $element, function onUiViewEnter () {
-            if (!angular.isDefined(autoscrollExp) || !autoscrollExp || scope.$eval(autoscrollExp)) {
-              $uiViewScroll(clone);
-            }
-          });
+          renderer.enter(clone, currentEl || $element);
           cleanupLastView();
         });
 
@@ -258,6 +239,10 @@ function $ViewDirective(   $state,   $injector,   $uiViewScroll) {
          */
         currentScope.$emit('$viewContentLoaded');
         if (onloadExp) currentScope.$eval(onloadExp);
+
+        if (!angular.isDefined(autoscrollExp) || !autoscrollExp || scope.$eval(autoscrollExp)) {
+          $uiViewScroll(currentEl);
+        }
       }
     }
   };

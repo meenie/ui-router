@@ -4,17 +4,6 @@
 describe('uiView', function () {
   'use strict';
 
-  afterEach(function () {
-    // check if any have failed
-    if(this.results_.failedCount > 0) {
-      // if so, change the function which should move to the next test
-      jasmine.Queue.prototype.next_ = function () {
-        // to instead skip to the end
-        this.onComplete();
-      }
-    }
-  });
-
   var scope, $compile, elem;
 
   beforeEach(function() {
@@ -121,13 +110,13 @@ describe('uiView', function () {
 
     it('anonymous ui-view should be replaced with the template of the current $state', inject(function ($state, $q, $animate) {
       elem.append($compile('<div><ui-view></ui-view></div>')(scope));
+      if ($animate) $animate.flushNext('enter');
 
       $state.transitionTo(aState);
+
       $q.flush();
 
-      console.log($animate.queue.reduce(function(acc, q) {acc.push(q.method); return acc;}, []));
       if ($animate) {
-        $animate.flushNext('enter');
         expect(elem.find('ui-view').text()).toBe('');
         expect($animate.flushNext('enter').element.text()).toBe(aState.template);
       }
@@ -135,12 +124,12 @@ describe('uiView', function () {
 
     it('named ui-view should be replaced with the template of the current $state', inject(function ($state, $q, $animate) {
       elem.append($compile('<div><ui-view name="cview"></ui-view></div>')(scope));
+      if ($animate) $animate.flushNext('enter');
 
       $state.transitionTo(cState);
       $q.flush();
 
       if ($animate) {
-        $animate.flushNext('enter');
         expect(elem.find('ui-view[name="cview"]').text()).toBe('');
         expect($animate.flushNext('enter').element.text()).toBe(cState.views.cview.template);
       }
@@ -148,39 +137,39 @@ describe('uiView', function () {
 
     it('ui-view should be updated after transition to another state', inject(function ($state, $q, $animate) {
       elem.append($compile('<div><ui-view></ui-view></div>')(scope));
+      if ($animate) $animate.flushNext('enter');
 
       $state.transitionTo(aState);
       $q.flush();
 
-      console.log($animate.queue.reduce(function(acc, q) {acc.push(q.method); return acc;}, []));
       if ($animate) {
-        $animate.flushNext('enter');
         expect(elem.find('ui-view').text()).toBe('');
         expect($animate.flushNext('enter').element.text()).toBe(aState.template);
+        $animate.flushNext('leave');
       }
 
       $state.transitionTo(bState);
       $q.flush();
 
       if ($animate) {
-        $animate.flushNext('leave');
         expect($animate.flushNext('enter').element.text()).toBe(bState.template);
       }
     }));
 
     it('should handle NOT nested ui-views', inject(function ($state, $q, $animate) {
       elem.append($compile('<div><div ui-view="dview1" class="dview1"></div><div ui-view="dview2" class="dview2"></div></div>')(scope));
+      if ($animate) {
+        $animate.flushNext('enter');
+        $animate.flushNext('enter');
+      }
 
       $state.transitionTo(dState);
       $q.flush();
 
-      console.log($animate.queue.reduce(function(acc, q) {acc.push(q.method); return acc;}, []));
-
       if ($animate) {
-        $animate.flushNext('enter');
-        $animate.flushNext('enter');
         expect(elem.find('ui-view[name="dview1"]').text()).toBe('');
         expect($animate.flushNext('enter').element.text()).toBe(dState.views.dview1.template);
+        $animate.flushNext('leave');
         expect(elem.find('ui-view[name="dview2"]').text()).toBe('');
         expect($animate.flushNext('enter').element.text()).toBe(dState.views.dview2.template);
       }
@@ -188,14 +177,14 @@ describe('uiView', function () {
 
     it('should handle nested ui-views (testing two levels deep)', inject(function ($state, $q, $animate) {
       $compile(elem.append('<div ui-view class="view"></div>'))(scope);
-
+      if ($animate) $animate.flushNext('enter');
       $state.transitionTo(fState);
       $q.flush();
 
       if ($animate) {
         expect(elem.find('ui-view').text()).toBe('');
         expect($animate.flushNext('enter').element.parent().find('.view')).toMatchText('');
-
+        $animate.flushNext('leave');
         var target = $animate.flushNext('enter').element;
         expect(target).toHaveClass('eview');
         expect(target).toMatchText(fState.views.eview.template);
@@ -207,6 +196,8 @@ describe('uiView', function () {
     it('initial view should be compiled if the view is empty', inject(function ($state, $q, $animate) {
       var content = 'inner content';
       elem.append($compile('<div><ui-view></ui-view></div>')(scope));
+      if ($animate) $animate.flushNext('enter');
+
       scope.$apply('content = "' + content + '"');
 
       $state.transitionTo(gState);
@@ -217,6 +208,7 @@ describe('uiView', function () {
         expect(target.text()).toBe("");
 
         $animate.flushNext('enter');
+        $animate.flushNext('leave');
         $animate.flushNext('enter');
         target = $animate.flushNext('addClass').element;
         expect(target).toHaveClass('test');
@@ -228,13 +220,16 @@ describe('uiView', function () {
       var content = 'inner content';
 
       elem.append($compile('<div><ui-view></ui-view></div>')(scope));
+      if ($animate) $animate.flushNext('enter');
+
       scope.$apply('content = "' + content + '"');
 
       $state.transitionTo(hState);
       $q.flush();
 
       if ($animate) {
-        expect($animate.flushNext('enter').element.text()).toBe('');
+        $animate.flushNext('enter');
+        $animate.flushNext('leave');
         expect($animate.flushNext('enter').element.text()).toBe(hState.views.inner.template);
         expect($animate.flushNext('addClass').element.text()).toBe(content);
 
@@ -292,10 +287,9 @@ describe('uiView', function () {
     }));
 
     // related to issue #857
-    xit('should handle ui-view inside ng-if', inject(function ($state, $q, $compile, $animate) {
-      elem.append($compile('<div ng-if="someBoolean"><ui-view></ui-view></div>')(scope));
-
+    it('should handle ui-view inside ng-if', inject(function ($state, $q, $compile, $animate) {
       scope.someBoolean = false;
+      elem.append($compile('<div ng-if="someBoolean"><ui-view></ui-view></div>')(scope));
 
       $state.transitionTo(aState);
       $q.flush();
@@ -303,34 +297,42 @@ describe('uiView', function () {
       // Verify there is no ui-view in the DOM
       expect(elem.find('ui-view').length).toBe(0);
 
+      // Turn on the div that holds the ui-view
+      scope.someBoolean = true;
+      scope.$digest();
+
+      if ($animate) $animate.flush();
+      // Verify that the ui-view is there and it has the correct content
+      expect(elem.find('ui-view').text()).toBe(aState.template);
+
+      scope.someBoolean = false;
+      scope.$digest();
+
       if ($animate) {
-        // Turn on the div that holds the ui-view
-        scope.someBoolean = true;
+        $animate.flush();
         scope.$digest();
-
-        var el = $animate.flushNext('enter').element;
-        console.log(el);
-        // Verify that the ui-view is there and it has the correct content
-        expect(el.text()).toBe(aState.template);
-
-        scope.someBoolean = false;
-        scope.$digest();
-
-        $animate.flushNext('leave');
-
-        // Verify there is no ui-view in the DOM
-        expect(elem.find('ui-view').length).toBe(0);
       }
 
+      // Verify there is no ui-view in the DOM
+      expect(elem.find('ui-view').length).toBe(0);
+
+      // Turn on the div that holds the ui-view once again
+      scope.someBoolean = true;
+      scope.$digest();
+
+      if ($animate) $animate.flush();
+      // Verify that the ui-view is there and it has the correct content
+      expect(elem.find('ui-view').text()).toBe(aState.template);
     }));
   });
 
   describe('autoscroll attribute', function () {
-    it('should autoscroll when unspecified', inject(function ($state, $q, $uiViewScroll, $animate) {
+    it('should autoscroll when unspecified', inject(function ($state, $q, $uiViewScroll, $animate, $timeout) {
       elem.append($compile('<div><ui-view></ui-view></div>')(scope));
       $state.transitionTo(aState);
       $q.flush();
       if ($animate) {
+        $timeout.flush();
         $animate.flush();
         expect($uiViewScroll).toHaveBeenCalledWith(elem.find('span').parent());
       }
