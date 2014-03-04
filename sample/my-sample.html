@@ -10,7 +10,7 @@
     <link rel="stylesheet" type="text/css" href="styles.css">
 
     <!-- Include both angular.js and angular-ui-router.js-->
-    <script src="../lib/angular-1.0.8/angular.js"></script>
+    <script src="../lib/angular-1.2.4/angular.js"></script>
     <!--<script src="../lib/angular-1.2.4/angular-animate.js"></script>-->
     <script src="../build/angular-ui-router.js"></script>
     <title>ui-router</title>
@@ -28,7 +28,11 @@
         $stateProvider.state('app.home', {
             views: {
                 app: {
+                    controllerAs: 'HomeCtrl',
                     controller: function($scope, $state) {
+                        var Ctrl = this;
+
+                        Ctrl.homeData = 'From Home!';
                         $scope.views = ['view1', 'view2'];
                         $scope.show = true;
                         $scope.shouldAnimate = true;
@@ -46,7 +50,7 @@
                         };
                     },
                     data: {hi: 'A message from Home State....umm...Hi?'},
-                    template: '<button ng-click="toggleShow()">Show?</button>\n<button ng-click="toggleAnimation()">Animate?</button>\n<button ng-click="toggleState(\'app.home.test1\')">Go Test 1</button>\n<button ng-click="toggleState(\'app.home.test2\')">Go Test 2</button>\n<div ng-if="show">\n    <div\n            ui-view="view1"\n            ng-class="{\'slide\': shouldAnimate}"><p>{{loadingMsg}}</p></div>\n</div>'
+                    template: '<button ng-click="toggleShow()">Show?</button>\n<button ng-click="toggleAnimation()">Animate?</button>\n<button ng-click="toggleState(\'app.home.test1\')">Go Test 1</button>\n<button ng-click="toggleState(\'app.home.test2\')">Go Test 2</button>\n<p>{{HomeCtrl.homeData}}</p>\n<div ng-if="show">\n    <div\n            ui-view="view1"\n            ng-class="{\'slide\': shouldAnimate}"><p>{{loadingMsg}}</p></div>\n</div>'
                 }
             }
         });
@@ -66,13 +70,13 @@
                         $scope.hi = 'Whatup?';
                         $scope.inUiView = 'In uiView';
                     },
-                    template: '<h1>{{hi}}</h1><div ui-view="noState" data-something="{{$parent.hi}}">{{inUiView}}</div>'
+                    template: '<h1>{{hi}}</h1><h3>{{HomeCtrl.homeData}}</h3><div ui-view data-something="{{HomeCtrl.homeData}}">{{inUiView}}</div>'
                 },
                 view2: {
                     controller: function($scope) {
                         $scope.hi = 'Whatup2?';
                     },
-                    template: '<h1>{{hi}}</h1>'
+                    template: '<h1>{{hi}}</h1><ui-view="hmmm"><h3>{{HomeCtrl.homeData}}</h3></ui-view>'
                 }
             }
         });
@@ -89,17 +93,22 @@
                         }
                     },
                     controller: function($scope, $state) {
-                        console.log('home.more');
                         $scope.data = $state.current.data;
                     },
                     template: '<h1>Mooare!</h1><p>{{data.hi}}</p>'
                 }
             }
         });
+        $stateProvider.state('app.home.test1.subTest1', {
+            controllerAs: 'SubTestCtrl',
+            controller: function($scope, $state) {
+            },
+            template: '<h1>Sub Test 1</h1><h2>{{HomeCtrl.homeData}}</h2>'
+        });
     });
 
     app.run(function($state) {
-        $state.go('app.home');
+        $state.go('app.home.test1.subTest1');
     });
 </script>
 </body>

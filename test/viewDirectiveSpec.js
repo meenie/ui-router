@@ -357,7 +357,7 @@ describe('uiView', function () {
   });
 
   it('should instantiate a controller with controllerAs', inject(function($state, $q, $animate) {
-    elem.append($compile('<div><ui-view><p>{{vm.someProperty}}</p></ui-view></div>')(scope));
+    elem.append($compile('<div><ui-view>{{vm.someProperty}}</ui-view></div>')(scope));
     $state.transitionTo(kState);
     $q.flush();
 
