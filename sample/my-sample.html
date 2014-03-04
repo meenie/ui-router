@@ -1,0 +1,106 @@
+<!doctype html>
+<!-- Our uiRouterSample module defined here -->
+<html lang="en" ng-app="myApp">
+<head>
+    <meta charset="utf-8">
+
+    <!-- using twitter bootstrap, but of course -->
+    <link rel="stylesheet" type="text/css" href="bootstrap.min.css">
+    <!-- styles for ng-animate are located here -->
+    <link rel="stylesheet" type="text/css" href="styles.css">
+
+    <!-- Include both angular.js and angular-ui-router.js-->
+    <script src="../lib/angular-1.0.8/angular.js"></script>
+    <!--<script src="../lib/angular-1.2.4/angular-animate.js"></script>-->
+    <script src="../build/angular-ui-router.js"></script>
+    <title>ui-router</title>
+</head>
+<body>
+<div ui-view></div>
+
+<script>
+    var app = angular.module('myApp', ['ui.router']);
+
+    app.config(function($stateProvider) {
+        $stateProvider.state('app', {
+            template: '<div ui-view="app" class="container">Top</div>'
+        });
+        $stateProvider.state('app.home', {
+            views: {
+                app: {
+                    controller: function($scope, $state) {
+                        $scope.views = ['view1', 'view2'];
+                        $scope.show = true;
+                        $scope.shouldAnimate = true;
+                        $scope.loadingMsg = 'Loading....';
+                        $scope.toggleShow = function() {
+                            $scope.show = ! $scope.show;
+                        };
+
+                        $scope.toggleAnimation = function() {
+                            $scope.shouldAnimate = ! $scope.shouldAnimate;
+                        };
+
+                        $scope.toggleState = function(stateName) {
+                            $state.go(stateName);
+                        };
+                    },
+                    data: {hi: 'A message from Home State....umm...Hi?'},
+                    template: '<button ng-click="toggleShow()">Show?</button>\n<button ng-click="toggleAnimation()">Animate?</button>\n<button ng-click="toggleState(\'app.home.test1\')">Go Test 1</button>\n<button ng-click="toggleState(\'app.home.test2\')">Go Test 2</button>\n<div ng-if="show">\n    <div\n            ui-view="view1"\n            ng-class="{\'slide\': shouldAnimate}"><p>{{loadingMsg}}</p></div>\n</div>'
+                }
+            }
+        });
+        $stateProvider.state('app.home.test1', {
+            views: {
+                view1: {
+                    resolve: {
+                        test: function($q, $timeout) {
+                            var deferred = $q.defer();
+                            $timeout(function() {
+                                deferred.resolve('yup!');
+                            }, 1000);
+                            return deferred.promise;
+                        }
+                    },
+                    controller: function($scope) {
+                        $scope.hi = 'Whatup?';
+                        $scope.inUiView = 'In uiView';
+                    },
+                    template: '<h1>{{hi}}</h1><div ui-view="noState" data-something="{{$parent.hi}}">{{inUiView}}</div>'
+                },
+                view2: {
+                    controller: function($scope) {
+                        $scope.hi = 'Whatup2?';
+                    },
+                    template: '<h1>{{hi}}</h1>'
+                }
+            }
+        });
+        $stateProvider.state('app.home.test2', {
+            views: {
+                view1: {
+                    resolve: {
+                        test: function($q, $timeout) {
+                            var deferred = $q.defer();
+                            $timeout(function() {
+                                deferred.resolve('yup!');
+                            }, 1000);
+                            return deferred.promise;
+                        }
+                    },
+                    controller: function($scope, $state) {
+                        console.log('home.more');
+                        $scope.data = $state.current.data;
+                    },
+                    template: '<h1>Mooare!</h1><p>{{data.hi}}</p>'
+                }
+            }
+        });
+    });
+
+    app.run(function($state) {
+        $state.go('app.home');
+    });
+</script>
+</body>
+</html>

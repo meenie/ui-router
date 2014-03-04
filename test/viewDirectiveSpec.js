@@ -195,55 +195,39 @@ describe('uiView', function () {
   describe('handling initial view', function () {
     it('initial view should be compiled if the view is empty', inject(function ($state, $q, $animate) {
       var content = 'inner content';
+      scope.content = content;
       elem.append($compile('<div><ui-view></ui-view></div>')(scope));
-      if ($animate) $animate.flushNext('enter');
-
-      scope.$apply('content = "' + content + '"');
 
       $state.transitionTo(gState);
       $q.flush();
 
-      if ($animate) {
-        var target = elem.find('ui-view');
-        expect(target.text()).toBe("");
+      if ($animate) $animate.flush();
 
-        $animate.flushNext('enter');
-        $animate.flushNext('leave');
-        $animate.flushNext('enter');
-        target = $animate.flushNext('addClass').element;
-        expect(target).toHaveClass('test');
-        expect(target.text()).toBe(content);
-      }
+      var span = elem.find('span');
+      expect(span).toHaveClass('test');
+      expect(span.text()).toBe(content);
     }));
 
-    it('initial view should be put back after removal of the view', inject(function ($state, $q, $animate) {
+    it('initial view should be put back after removal of the view', inject(function ($state, $q, $animate, $timeout) {
       var content = 'inner content';
-
+      scope.content = content;
       elem.append($compile('<div><ui-view></ui-view></div>')(scope));
-      if ($animate) $animate.flushNext('enter');
-
-      scope.$apply('content = "' + content + '"');
 
       $state.transitionTo(hState);
       $q.flush();
 
-      if ($animate) {
-        $animate.flushNext('enter');
-        $animate.flushNext('leave');
-        expect($animate.flushNext('enter').element.text()).toBe(hState.views.inner.template);
-        expect($animate.flushNext('addClass').element.text()).toBe(content);
+      if ($animate) $animate.flush();
 
-        // going to the parent state which makes the inner view empty
-        $state.transitionTo(gState);
-        $q.flush();
+      expect(elem.find('ui-view').text()).toBe(hState.views.inner.template);
 
-        $animate.flushNext('enter');
-        expect($animate.flushNext('leave').element).toMatchText(hState.views.inner.template);
+      // going to the parent state which makes the inner view empty
+      $state.transitionTo(gState);
+      $q.flush();
 
-        var target = $animate.flushNext('addClass').element;
-        expect(target).toHaveClass('test');
-        expect(target).toMatchText(content);
-      }
+      if ($animate) $animate.flush();
+
+      expect(elem.find('ui-view').text()).toBe(content);
+      expect(elem.find('span')).toHaveClass('test');
     }));
 
     // related to issue #435
@@ -311,10 +295,7 @@ describe('uiView', function () {
       scope.someBoolean = false;
       scope.$digest();
 
-      if ($animate) {
-        $animate.flush();
-        scope.$digest();
-      }
+      if ($animate) $animate.flush();
 
       // Verify there is no ui-view in the DOM
       expect(elem.find('ui-view').length).toBe(0);
@@ -332,9 +313,11 @@ describe('uiView', function () {
   describe('autoscroll attribute', function () {
     it('should autoscroll when unspecified', inject(function ($state, $q, $uiViewScroll, $animate) {
       elem.append($compile('<div><ui-view></ui-view></div>')(scope));
+
       $state.transitionTo(aState);
       $q.flush();
       if ($animate) $animate.flush();
+
       expect($uiViewScroll).toHaveBeenCalledWith(elem.find('span').parent());
     }));
 
@@ -347,16 +330,21 @@ describe('uiView', function () {
     }));
 
     it('should autoscroll based on expression', inject(function ($state, $q, $uiViewScroll, $animate) {
+      scope.doScroll = false;
+
       elem.append($compile('<div><ui-view autoscroll="doScroll"></ui-view></div>')(scope));
 
-      scope.doScroll = false;
       $state.transitionTo(aState);
       $q.flush();
+
+      if ($animate) $animate.flush();
+
       expect($uiViewScroll).not.toHaveBeenCalled();
 
       scope.doScroll = true;
       $state.transitionTo(bState);
       $q.flush();
+
       if ($animate) $animate.flush();
 
       var target;
@@ -366,15 +354,18 @@ describe('uiView', function () {
 
       expect($uiViewScroll).toHaveBeenCalledWith(target);
     }));
-
-    it('should instantiate a controller with controllerAs', inject(function($state, $q) {
-      elem.append($compile('<div><ui-view>{{vm.someProperty}}</ui-view></div>')(scope));
-      $state.transitionTo(kState);
-      $q.flush();
-      var innerScope = scope.$$childHead;
-      expect(innerScope.vm).not.toBeUndefined();
-      expect(innerScope.vm.someProperty).toBe("value");
-    }))
   });
 
+  it('should instantiate a controller with controllerAs', inject(function($state, $q, $animate) {
+    elem.append($compile('<div><ui-view><p>{{vm.someProperty}}</p></ui-view></div>')(scope));
+    $state.transitionTo(kState);
+    $q.flush();
+
+    expect(scope.vm).not.toBeUndefined();
+    expect(scope.vm.someProperty).toBe('value');
+
+    if ($animate) $animate.flush();
+
+    expect(elem.text()).toBe('value');
+  }));
 });

@@ -48,11 +48,13 @@ angular.module('ngMock').config(function ($provide) {
 try {
   // Animation testing support
   angular.module('mock.animate').config(function ($provide) {
-    $provide.decorator('$animate', function ($delegate) {
+    $provide.decorator('$animate', function ($delegate, $rootScope) {
       $delegate.flush = function() {
         while (this.queue.length > 0) {
-          this.flushNext(this.queue[0].method);
+          var method = this.queue[0].method;
+          this.flushNext(method);
         }
+        $rootScope.$digest();
       };
       return $delegate;
     });

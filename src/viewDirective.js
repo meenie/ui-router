@@ -115,8 +115,8 @@
  * <ui-view autoscroll='scopeVariable'/>
  * </pre>
  */
-$ViewDirective.$inject = ['$state', '$injector', '$uiViewScroll'];
-function $ViewDirective(   $state,   $injector,   $uiViewScroll) {
+$ViewDirective.$inject = ['$state', '$injector', '$uiViewScroll', '$compile'];
+function $ViewDirective(   $state,   $injector,   $uiViewScroll, $compile) {
 
   function getService() {
     return ($injector.has) ? function(service) {
@@ -169,41 +169,31 @@ function $ViewDirective(   $state,   $injector,   $uiViewScroll) {
     terminal: true,
     priority: 400,
     transclude: 'element',
+    scope: {
+      'onload': '&',
+      'autoscroll': '&',
+      'uiView': '@',
+      'name': '@'
+    },
     compile: function (tElement, tAttrs, $transclude) {
       return function (scope, $element, attrs) {
-        var currentScope, currentEl, viewLocals,
+        var currentEl, viewLocals,
             loaded        = false,
-            onloadExp     = attrs.onload || '',
-            autoscrollExp = attrs.autoscroll,
+            onloadExp     = scope.onload || '',
+            autoscrollExp = scope.autoscroll,
             renderer      = getRenderer(attrs, scope),
-            parentEl      = $element.parent(),
-            inherited     = parentEl.inheritedData('$uiView'),
-            name          = attrs[directive.name] || attrs.name || '';
+            inherited     = $element.parent().inheritedData('$uiView'),
+            name          = scope[directive.name] || scope.name || '';
 
-        if (name.indexOf('@') < 0) name = name + '@' + (inherited ? inherited.state.name : '');
+        if (name.indexOf('@') < 0) {
+          name = name + '@' + (inherited ? inherited.state.name : '');
+        }
 
-        var eventHook = function () {
-          if (viewIsUpdating) return;
-
-          viewIsUpdating = true;
-
-          try { updateView(); } catch (e) {
-            throw e;
-          } finally {
-            viewIsUpdating = false;
-          }
-        };
-
-        scope.$on('$stateChangeSuccess', eventHook);
-        scope.$on('$viewContentLoading', eventHook);
+        scope.$on('$stateChangeSuccess', updateView);
+        scope.$on('$viewContentLoading', updateView);
         updateView();
 
         function cleanupLastView() {
-          if (currentScope) {
-            currentScope.$destroy();
-            currentScope = null;
-          }
-
           if (currentEl) {
             renderer.leave(currentEl);
             currentEl = null;
@@ -211,22 +201,18 @@ function $ViewDirective(   $state,   $injector,   $uiViewScroll) {
         }
 
         function updateView() {
-          var newScope  = scope.$new(),
-              locals    = $state.$current && $state.$current.locals[name];
+          var locals = $state.$current && $state.$current.locals[name];
 
           if (loaded && locals === viewLocals) return; // nothing to do
 
           loaded = true;
           viewLocals = locals;
 
-          var clone = $transclude(newScope, function(clone) {
+          currentEl = $transclude(scope, function(clone) {
             clone.data('$uiViewName', name);
-            renderer.enter(clone, currentEl || $element);
+            renderer.enter(clone, $element);
             cleanupLastView();
           });
-
-          currentEl = clone;
-          currentScope = newScope;
 
           /**
            * @ngdoc event
@@ -238,10 +224,11 @@ function $ViewDirective(   $state,   $injector,   $uiViewScroll) {
            *
            * @param {Object} event Event object.
            */
-          currentScope.$emit('$viewContentLoaded');
-          if (onloadExp) currentScope.$eval(onloadExp);
+          scope.$emit('$viewContentLoaded');
+          onloadExp();
 
-          if (!angular.isDefined(autoscrollExp) || !autoscrollExp || scope.$eval(autoscrollExp)) {
+          var shouldAutoscroll = autoscrollExp();
+          if (shouldAutoscroll === undefined || shouldAutoscroll) {
             $uiViewScroll(currentEl);
           }
         }
@@ -263,28 +250,25 @@ function $ViewDirectiveFill ($compile, $controller, $state) {
       return function (scope, $element) {
         var current = $state.$current,
             name = $element.data('$uiViewName'),
-            locals = current && current.locals[name];
+            locals = current && current.locals[name],
+            $scope = scope.$parent;
 
-        if (!locals) {
-          return;
-        }
-
-        $element.data('$uiView', { name: name, state: locals.$$state });
-        $element.html(locals.$template ? locals.$template : initial);
+        $element.data('$uiView', { name: name, state: locals && locals.$$state });
+        $element.html(locals && locals.$template ? locals.$template : initial);
 
         var link = $compile($element.contents());
 
-        if (locals.$$controller) {
-          locals.$scope = scope;
+        if (locals && locals.$$controller) {
+          locals.$scope = $scope;
           var controller = $controller(locals.$$controller, locals);
           if (current.controllerAs) {
-            scope[current.controllerAs] = controller;
+            $scope[current.controllerAs] = controller;
           }
           $element.data('$ngControllerController', controller);
           $element.children().data('$ngControllerController', controller);
         }
 
-        link(scope);
+        link($scope);
       };
     }
   };
