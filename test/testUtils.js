@@ -54,7 +54,6 @@ try {
           var method = this.queue[0].method;
           this.flushNext(method);
         }
-        $rootScope.$digest();
       };
       return $delegate;
     });
