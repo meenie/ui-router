@@ -109,7 +109,7 @@ describe('uiView', function () {
   describe('linking ui-directive', function () {
 
     it('anonymous ui-view should be replaced with the template of the current $state', inject(function ($state, $q) {
-      elem.append($compile('<ui-view></ui-view>')(scope));
+      elem.append($compile('<div><ui-view></ui-view></div>')(scope));
 
       expect(elem.find('ui-view').text()).toBe('');
 
@@ -120,7 +120,7 @@ describe('uiView', function () {
     }));
 
     it('named ui-view should be replaced with the template of the current $state', inject(function ($state, $q) {
-      elem.append($compile('<ui-view name="cview"></ui-view>')(scope));
+      elem.append($compile('<div><ui-view name="cview"></ui-view></div>')(scope));
 
       $state.transitionTo(cState);
       $q.flush();
@@ -129,7 +129,7 @@ describe('uiView', function () {
     }));
 
     it('ui-view should be updated after transition to another state', inject(function ($state, $q) {
-      elem.append($compile('<ui-view></ui-view>')(scope));
+      elem.append($compile('<div><ui-view></ui-view></div>')(scope));
       expect(elem.find('ui-view').text()).toBe('');
 
       $state.transitionTo(aState);
@@ -144,7 +144,7 @@ describe('uiView', function () {
     }));
 
     it('should handle NOT nested ui-views', inject(function ($state, $q) {
-      elem.append($compile('<ui-view name="dview1" class="dview1"></ui-view><ui-view name="dview2" class="dview2"></ui-view>')(scope));
+      elem.append($compile('<div><ui-view name="dview1" class="dview1"></ui-view><ui-view name="dview2" class="dview2"></ui-view></div>')(scope));
       expect(elem.find('ui-view').eq(0).text()).toBe('');
       expect(elem.find('ui-view').eq(1).text()).toBe('');
 
@@ -156,7 +156,7 @@ describe('uiView', function () {
     }));
 
     it('should handle nested ui-views (testing two levels deep)', inject(function ($state, $q) {
-      $compile(elem.append('<ui-view></ui-view>'))(scope);
+      $compile(elem.append('<div><ui-view></ui-view></div>'))(scope);
       expect(elem.find('ui-view').text()).toBe('');
 
       $state.transitionTo(fState);
@@ -170,7 +170,7 @@ describe('uiView', function () {
     it('initial view should be compiled if the view is empty', inject(function ($state, $q) {
       var content = 'inner content';
       scope.content = content;
-      elem.append($compile('<ui-view></ui-view>')(scope));
+      elem.append($compile('<div><ui-view></ui-view></div>')(scope));
 
       $state.transitionTo(gState);
       $q.flush();
@@ -181,7 +181,7 @@ describe('uiView', function () {
     it('initial view should be put back after removal of the view', inject(function ($state, $q) {
       var content = 'inner content';
       scope.content = content;
-      elem.append($compile('<ui-view></ui-view>')(scope));
+      elem.append($compile('<div><ui-view></ui-view></div>')(scope));
 
       $state.go(hState);
       $q.flush();
@@ -199,7 +199,7 @@ describe('uiView', function () {
     it('initial view should be transcluded once to prevent breaking other directives', inject(function ($state, $q) {
       scope.items = ["I", "am", "a", "list", "of", "items"];
 
-      elem.append($compile('<ui-view></ui-view>')(scope));
+      elem.append($compile('<div><ui-view></ui-view></div>')(scope));
 
       // transition to state that has an initial view
       $state.transitionTo(iState);
@@ -269,7 +269,7 @@ describe('uiView', function () {
 
   describe('autoscroll attribute', function () {
     it('should autoscroll when unspecified', inject(function ($state, $q, $uiViewScroll, $animate) {
-      elem.append($compile('<ui-view></ui-view>')(scope));
+      elem.append($compile('<div><ui-view></ui-view></div>')(scope));
 
       $state.transitionTo(aState);
       $q.flush();
@@ -280,7 +280,7 @@ describe('uiView', function () {
     }));
 
     it('should autoscroll when expression is missing', inject(function ($state, $q, $uiViewScroll, $animate) {
-      elem.append($compile('<ui-view autoscroll></ui-view>')(scope));
+      elem.append($compile('<div><ui-view autoscroll></ui-view></div>')(scope));
       $state.transitionTo(aState);
       $q.flush();
 
@@ -292,7 +292,7 @@ describe('uiView', function () {
     it('should autoscroll based on expression', inject(function ($state, $q, $uiViewScroll, $animate) {
       scope.doScroll = false;
 
-      elem.append($compile('<ui-view autoscroll="doScroll"></ui-view>')(scope));
+      elem.append($compile('<div><ui-view autoscroll="doScroll"></ui-view></div>')(scope));
 
       $state.transitionTo(aState);
       $q.flush();
@@ -307,17 +307,21 @@ describe('uiView', function () {
 
       if ($animate) $animate.triggerCallbacks();
 
-      var target;
-      angular.forEach(elem.find('ui-view'), function(view) {
-        if (angular.element(view).text() === bState.template) target = angular.element(view);
-      });
+      var target,
+          index   = -1,
+          uiViews = elem.find('ui-view');
+
+      while (index++ < uiViews.length) {
+        var uiView = angular.element(uiViews[index]);
+        if (uiView.text() === bState.template) target = uiView;
+      }
 
       expect($uiViewScroll).toHaveBeenCalledWith(target);
     }));
   });
 
   it('should instantiate a controller with controllerAs', inject(function($state, $q) {
-    elem.append($compile('<ui-view>{{vm.someProperty}}</ui-view>')(scope));
+    elem.append($compile('<div><ui-view>{{vm.someProperty}}</ui-view></div>')(scope));
     $state.transitionTo(kState);
     $q.flush();
 

@@ -10,20 +10,25 @@
     <link rel="stylesheet" type="text/css" href="styles.css">
 
     <!-- Include both angular.js and angular-ui-router.js-->
-    <script src="../lib/angular-1.2.14/angular.js"></script>
-    <script src="../lib/angular-1.2.14/angular-animate.js"></script>
+    <script src="../lib/angular-1.0.8/angular.js"></script>
+    <!--<script src="../lib/angular-1.2.14/angular-animate.js"></script>-->
     <script src="../build/angular-ui-router.js"></script>
     <title>ui-router</title>
 </head>
 <body>
-<div ui-view></div>
+<div ui-view="test"></div>
 
 <script>
-    var app = angular.module('myApp', ['ui.router', 'ngAnimate']);
+    var app = angular.module('myApp', ['ui.router']);
 
     app.config(function($stateProvider) {
         $stateProvider.state('app', {
-            template: '<div ui-view="app" class="container">Top</div>'
+            views: {
+                test: {
+                    controller: function() {console.log('very top')},
+                    template: '<div class="container" ui-view="app">Top</div>'
+                }
+            }
         });
         $stateProvider.state('app.home', {
             data: {hi: 'A message from Home State....umm...Hi?'},
@@ -31,6 +36,7 @@
                 app: {
                     controllerAs: 'HomeCtrl',
                     controller: function($scope, $state) {
+                        console.log('home ctrl');
                         var Ctrl = this;
 
                         Ctrl.homeData = 'From Home!';
@@ -50,7 +56,7 @@
                             $state.go(stateName);
                         };
                     },
-                    template: '<button ng-click="toggleShow()">Show?</button>\n<button ng-click="toggleAnimation()">Animate?</button>\n<button ng-click="toggleState(\'app.home.test1\')">Go Test 1</button>\n<button ng-click="toggleState(\'app.home.test2\')">Go Test 2</button>\n<p>{{HomeCtrl.homeData}}</p>\n<div ng-if="show">\n    <div\n            ng-repeat="view in views"\n            ui-view="{{view}}"\n            ng-class="{\'slide\': shouldAnimate}"><p>{{HomeCtrl.loadingMsg}}</p></div>\n</div>'
+                    template: '<button ng-click="toggleShow()">Show?</button>\n<button ng-click="toggleAnimation()">Animate?</button>\n<button ng-click="toggleState(\'app.home.test1\')">Go Test 1</button>\n<button ng-click="toggleState(\'app.home.test2\')">Go Test 2</button>\n<p>{{HomeCtrl.homeData}}</p>\n<div ng-if="show" ng-class="{\'slide\': shouldAnimate}">\n    <div\n            ng-repeat="view in views"\n            ui-view="{{view}}"\n            ng-class="{\'slide\': shouldAnimate}"><p>{{HomeCtrl.loadingMsg}}</p></div>\n</div>'
                 }
             }
         });
@@ -67,6 +73,7 @@
                         }
                     },
                     controller: function($scope) {
+                        console.log('app.home.test1.view1');
                         $scope.hi = 'Whatup?';
                         $scope.inUiView = 'In uiView';
                     },
@@ -110,7 +117,7 @@
     });
 
     app.run(function($state) {
-        $state.go('app.home');
+        $state.go('app.home.test1.subTest1');
     });
 </script>
 </body>

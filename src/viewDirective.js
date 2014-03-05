@@ -130,8 +130,7 @@ function $ViewDirective(   $state,   $injector,   $uiViewScroll) {
     };
   }
 
-  var viewIsUpdating = false,
-      service = getService(),
+  var service = getService(),
       $animator = service('$animator'),
       $animate = service('$animate');
 
@@ -156,7 +155,7 @@ function $ViewDirective(   $state,   $injector,   $uiViewScroll) {
       var animate = $animator && $animator(scope, attrs);
 
       return {
-        enter: function(element, target, cb) { animate.enter(element, null, target); cb(); },
+        enter: function(element, target, cb) {animate.enter(element, null, target); cb(); },
         leave: function(element, cb) { animate.leave(element); cb(); }
       };
     }
@@ -167,31 +166,23 @@ function $ViewDirective(   $state,   $injector,   $uiViewScroll) {
   var directive = {
     restrict: 'ECA',
     terminal: true,
-    priority: 100,
+    priority: 400,
     transclude: 'element',
     compile: function (tElement, tAttrs, $transclude) {
       return function (scope, $element, attrs) {
-        var name, previousEl, currentEl, currentScope, viewLocals,
-            loaded        = false,
+        var previousEl, currentEl, currentScope, latestLocals,
             onloadExp     = attrs.onload || '',
             autoScrollExp = attrs.autoscroll,
-            renderer      = getRenderer(attrs, scope),
-            inherited     = $element.inheritedData('$uiView');
+            renderer      = getRenderer(attrs, scope);
 
-        attrs.$observe(directive.name, function nameObserver (val) {
-          if (val === undefined) {
-            val = attrs.name;
-          }
-
-          name = val || '';
-          if (name.indexOf('@') < 0) {
-            name = name + '@' + (inherited ? inherited.state.name : '');
-          }
-
-          scope.$on('$stateChangeSuccess', updateView);
-          scope.$on('$viewContentLoading', updateView);
-          updateView();
+        scope.$on('$stateChangeSuccess', function() {
+          updateView(false);
         });
+        scope.$on('$viewContentLoading', function() {
+          updateView(false);
+        });
+
+        updateView(true);
 
         function cleanupLastView() {
           if (previousEl) {
@@ -214,17 +205,14 @@ function $ViewDirective(   $state,   $injector,   $uiViewScroll) {
           }
         }
 
-        function updateView() {
-          var newScope = scope.$new(),
-              locals =  $state.$current && $state.$current.locals[name];
+        function updateView(firstTime) {
+          var newScope        = scope.$new(),
+              name            = currentEl && currentEl.data('$uiViewName'),
+              previousLocals  = name && $state.$current && $state.$current.locals[name];
 
-          if (loaded && locals === viewLocals) return; // nothing to do
-
-          loaded = true;
-          viewLocals = locals;
+          if (!firstTime && previousLocals === latestLocals) return; // nothing to do
 
           var clone = $transclude(newScope, function(clone) {
-            clone.data('$uiViewName', name);
             renderer.enter(clone, $element, function onUiViewEnter() {
               if (!angular.isDefined(autoScrollExp) || !autoScrollExp || scope.$eval(autoScrollExp)) {
                 $uiViewScroll(clone);
@@ -232,6 +220,8 @@ function $ViewDirective(   $state,   $injector,   $uiViewScroll) {
             });
             cleanupLastView();
           });
+
+          latestLocals = $state.$current.locals[clone.data('$uiViewName')];
 
           currentEl = clone;
           currentScope = newScope;
@@ -262,11 +252,18 @@ function $ViewDirectiveFill ($compile, $controller, $state) {
     priority: -400,
     compile: function (tElement) {
       var initial = tElement.html();
+      return function (scope, $element, attrs) {
+        var name      = attrs.uiView || attrs.name || '',
+            inherited = $element.inheritedData('$uiView');
 
-      return function (scope, $element) {
+        if (name.indexOf('@') < 0) {
+          name = name + '@' + (inherited ? inherited.state.name : '');
+        }
+
+        $element.data('$uiViewName', name);
+
         var current = $state.$current,
-            name = $element.data('$uiViewName'),
-            locals = current && current.locals[name];
+            locals  = current && current.locals[name];
 
         if (! locals) {
           return;
