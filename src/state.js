@@ -76,7 +76,7 @@ function $StateProvider(   $urlRouterProvider,   $urlMatcherFactory,           $
       }
       if (!isArray(state.params)) throw new Error("Invalid params in state '" + state + "'");
       if (state.url) throw new Error("Both params and url specicified in state '" + state + "'");
-      return state.params;
+      return state.parent.params.concat(state.params);
     },
 
     // If there is no explicit multi-view configuration, make one up so we don't have
